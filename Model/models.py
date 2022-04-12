@@ -1,7 +1,7 @@
 import torch
 class AutoEncoder(torch.nn.Module):
     class Encoder(torch.nn.Module):
-        class AutoEncoderBlock(torch.nn.Module):
+        class EncoderBlock(torch.nn.Module):
             def __init__(self, n_input, n_output):
                 super().__init__()
                 self.net = torch.nn.Sequential(
@@ -21,7 +21,7 @@ class AutoEncoder(torch.nn.Module):
             L.append(torch.nn.BatchNorm2d(n_input))
             L.append(torch.nn.ReLU())
             for i in range(1, len(dim_sizes)):
-                L.append(self.AutoEncoderBlock(dim_sizes[i-1], dim_sizes[i]))
+                L.append(self.EncoderBlock(dim_sizes[i-1], dim_sizes[i]))
             L.append(torch.nn.Linear(dim_sizes[-1], n_output))
             self.layers = torch.nn.Sequential(*L)
         
@@ -49,7 +49,7 @@ class AutoEncoder(torch.nn.Module):
             L.append(torch.nn.BatchNorm2d(n_input))
             L.append(torch.nn.ReLU())
             for i in range(1, len(dim_sizes)):
-                L.append(self.AutoEncoderBlock(dim_sizes[i-1], dim_sizes[i]))
+                L.append(self.DecoderBlock(dim_sizes[i-1], dim_sizes[i]))
             L.append(torch.nn.Linear(dim_sizes[-1], n_output))
             self.layers = torch.nn.Sequential(*L)
         

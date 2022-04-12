@@ -12,11 +12,6 @@ VALID_PATH = "Data/test.npy"
 def train(args):
     from os import path
     model = AutoEncoder()
-    train_logger, valid_logger = None, None
-    if args.log_dir is not None:
-        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
-        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'))
-
 
     # Set hyperparameters from the parser
     lr = args.lr
@@ -37,12 +32,12 @@ def train(args):
     data_val = load_data(VALID_PATH, num_workers, batch_size)
 
     # Set up loggers
-    log_dir = args.log_dir
     log_time = '{}'.format(time.strftime('%H-%M-%S'))
     log_name = 'lr=%s_epoch=%s_batch_size=%s_wd=%s' % (lr, epochs, batch_size, weight_decay)
-    logger = tb.SummaryWriter()
-    train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train') + '/%s_%s' % (log_name, log_time))
-    valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'test') + '/%s_%s' % (log_name, log_time))
+    train_logger, valid_logger = None, None
+    if args.log_dir:
+        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train') + '/%s_%s' % (log_name, log_time))
+        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'test') + '/%s_%s' % (log_name, log_time))
     global_step = 0
 
     # Wrap in a progress bar.
@@ -65,12 +60,14 @@ def train(args):
             optim.zero_grad()
             
             # Add loss to TensorBoard.
-            train_logger.add_scalar('Loss', loss.item(), global_step=global_step)
+            if train_logger:
+                train_logger.add_scalar('Loss', loss.item(), global_step=global_step)
             global_step += 1
 
         train_error_total = torch.FloatTensor(train_error_val).mean().item()
         print(train_error_total)
-        train_logger.add_scalar('Train Error', train_error_total, global_step=global_step)
+        if train_logger:
+            train_logger.add_scalar('Train Error', train_error_total, global_step=global_step)
 
         # Set the model to eval mode and compute accuracy.
         # No need to change this, but feel free to implement additional logging.
@@ -85,7 +82,8 @@ def train(args):
 
         error_total = torch.FloatTensor(error_validation).mean().item()
         print(error_total)
-        valid_logger.add_scalar('Validation Error', error_total, global_step=global_step)
+        if valid_logger:
+            valid_logger.add_scalar('Validation Error', error_total, global_step=global_step)
 
     save_model(model)
 
@@ -94,7 +92,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log_dir')
+    parser.add_argument('--log_dir', type=str, default=None)
     # Put custom arguments here
     parser.add_argument('-l', '--lr', type=float, default=1e-2)
     parser.add_argument('-e', '--epoch', type=int, default=10)
