@@ -1,4 +1,4 @@
-from models import AutoEncoder, save_model
+from models import AutoEncoder, AutoEncoderConv, save_model
 from utils import load_data, error
 
 import time
@@ -11,7 +11,8 @@ VALID_PATH = "Data/test.npy"
 
 def train(args):
     from os import path
-    model = AutoEncoder()
+    # model = AutoEncoder(encoder_dim_sizes = [32, 64, 32, 16], decoder_dim_sizes = [32, 64, 32], n_input = 20, latent_dim = 10)
+    model = AutoEncoderConv(encoder_dim_sizes = [32, 64, 32], decoder_dim_sizes = [32, 64, 32], n_input = 1, latent_dim = 10)
 
     # Set hyperparameters from the parser
     lr = args.lr
@@ -28,8 +29,8 @@ def train(args):
     optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay = weight_decay)
 
     # Set up training data and validation data
-    data_train = load_data(TRAIN_PATH, num_workers, batch_size)
-    data_val = load_data(VALID_PATH, num_workers, batch_size)
+    data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize)
+    data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize)
 
     # Set up loggers
     log_time = '{}'.format(time.strftime('%H-%M-%S'))
@@ -46,12 +47,13 @@ def train(args):
         model.train()
 
         train_error_val = list()
+        loss_vals = list()
         for x in data_train:
             x = x.to(device)
 
             pred = model(x)
+            
             train_error_val.append(error(pred, x))
-
             # Compute loss and update model weights.
             loss = loss_func(pred, x)
 
@@ -60,12 +62,14 @@ def train(args):
             optim.zero_grad()
             
             # Add loss to TensorBoard.
+            loss_vals.append(loss.item())
             if train_logger:
                 train_logger.add_scalar('Loss', loss.item(), global_step=global_step)
             global_step += 1
 
         train_error_total = torch.FloatTensor(train_error_val).mean().item()
-        print(train_error_total)
+        print('Train Error', train_error_total)
+        print('Loss', torch.FloatTensor(loss_vals).mean().item())
         if train_logger:
             train_logger.add_scalar('Train Error', train_error_total, global_step=global_step)
 
@@ -81,7 +85,7 @@ def train(args):
             error_validation.append(error(pred, x))
 
         error_total = torch.FloatTensor(error_validation).mean().item()
-        print(error_total)
+        print('Validation Error', error_total)
         if valid_logger:
             valid_logger.add_scalar('Validation Error', error_total, global_step=global_step)
 
