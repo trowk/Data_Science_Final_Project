@@ -1,2 +1,4 @@
 *.mat
 *.npy
+__pycache__
+*.th
