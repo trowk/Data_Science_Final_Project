@@ -136,9 +136,7 @@ class AutoEncoderConv(torch.nn.Module):
 def save_model(model):
     from torch import save
     from os import path
-    if isinstance(model, AutoEncoder):
-        return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'autoencoder.th'))
-    raise ValueError("model type '%s' not supported!"%str(type(model)))
+    return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'autoencoder.th'))
 
 
 def load_model():
