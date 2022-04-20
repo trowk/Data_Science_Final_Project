@@ -98,8 +98,8 @@ class AutoEncoderConv(torch.nn.Module):
             L.append(self.EncoderBlock(64, 128, kernel_size = 3, padding = 1, stride=1))
             L.append(self.EncoderBlock(128, 128, stride=2))
             L.append(self.EncoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
-            L.append(self.EncoderBlock(64, 32, kernel_size = 3, padding = 1, stride=2))
-            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 0, stride=1))
+            L.append(self.EncoderBlock(64, 32, kernel_size = 3, padding = 1, stride=1))
+            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 1, stride=1))
 
             self.layers = torch.nn.Sequential(*L)
         
@@ -147,14 +147,12 @@ class AutoEncoderConv(torch.nn.Module):
             super().__init__()
             L = list()
             # L.append(self.TransposeBlock(1, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
-            L.append(self.TransposeBlock(1, 32, kernel_size = 1, padding = 0, stride = 3, output_padding=2))
-            L.append(self.TransposeBlock(32, 32, kernel_size = 3, padding = 0, stride = 1, output_padding=0))
+            L.append(self.TransposeBlock(1, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
             L.append(self.DecoderBlock(32, 64, kernel_size = 3, padding = 1, stride=1))
             L.append(self.DecoderBlock(64, 128, kernel_size = 3, padding = 1, stride=1))
             L.append(self.TransposeBlock(128, 128, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
             L.append(self.DecoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
             L.append(self.DecoderBlock(64, 32, kernel_size = 3, padding = 1, stride=1))
-            L.append(self.TransposeBlock(32, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
             L.append(self.DecoderBlock(32, 32, kernel_size = 3, padding = 1, stride=1))
             L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 1, stride=1))
 
@@ -182,6 +180,6 @@ def save_model(model):
 def load_model():
     from torch import load
     from os import path
-    r = AutoEncoder()
+    r = AutoEncoderConv()
     r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'autoencoder.th'), map_location='cpu'))
     return r

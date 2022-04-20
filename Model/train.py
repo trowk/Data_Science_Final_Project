@@ -30,8 +30,8 @@ def train(args):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, 'min', verbose=True)
 
     # Set up training data and validation data
-    data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize)
-    data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize)
+    data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize)
+    data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize)
 
     # Set up loggers
     log_time = '{}'.format(time.strftime('%H-%M-%S'))
@@ -50,12 +50,20 @@ def train(args):
         train_error_val = list()
         loss_vals = list()
         for x in data_train:
-            x = x.to(device)
-            pred = model(x)
+            if args.denormalize:
+                d, norms = x
+                norms = norms.to(device)
+            else:
+                d = x
+            d = d.to(device)
+            pred = model(d)
             
-            train_error_val.append(error(pred, x))
+            if args.denormalize:
+                train_error_val.append(error(pred * norms[:, None], d * norms[:, None]))
+            else:
+                train_error_val.append(error(pred, d))
             # Compute loss and update model weights.
-            loss = loss_func(pred, x)
+            loss = loss_func(pred, d)
 
             loss.backward()
             optim.step()
@@ -82,9 +90,18 @@ def train(args):
         error_validation = list()
 
         for x in data_val:
-            x = x.to(device)
-            pred = model(x)
-            error_validation.append(error(pred, x))
+            if args.denormalize:
+                d, norms = x
+                norms = norms.to(device)
+            else:
+                d = x
+            d = d.to(device)
+            pred = model(d)
+            
+            if args.denormalize:
+                error_validation.append(error(pred * norms[:, None], d * norms[:, None]))
+            else:
+                error_validation.append(error(pred, d))
 
         error_total = torch.FloatTensor(error_validation).mean().item()
         print('Validation Error', error_total)
@@ -105,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batchsize', type=int, default=512)
     parser.add_argument('-w', '--num_workers', type=int, default=16)
     parser.add_argument('-d', '--weight_decay', type=float, default=1e-6)
-
+    parser.add_argument('-v', '--denormalize', default=False, action='store_true')
 
     args = parser.parse_args()
     train(args)
