@@ -16,7 +16,6 @@ class AutoEncoder(torch.nn.Module):
         def __init__(self, dim_sizes = [32, 64], n_input = 20, n_output = 10):
             super().__init__()
             L = list()
-            L.append(torch.nn.BatchNorm1d(n_input))
             L.append(torch.nn.Linear(n_input, dim_sizes[0], bias = False))
             L.append(torch.nn.BatchNorm1d(dim_sizes[0]))
             L.append(torch.nn.ReLU())
@@ -44,7 +43,6 @@ class AutoEncoder(torch.nn.Module):
         def __init__(self, dim_sizes = [32, 64], n_input = 10, n_output = 20):
             super().__init__()
             L = list()
-            L.append(torch.nn.BatchNorm1d(n_input))
             L.append(torch.nn.Linear(n_input, dim_sizes[0], bias = False))
             L.append(torch.nn.BatchNorm1d(dim_sizes[0]))
             L.append(torch.nn.ReLU())
@@ -69,27 +67,40 @@ class AutoEncoder(torch.nn.Module):
 class AutoEncoderConv(torch.nn.Module):
     class Encoder(torch.nn.Module):
         class EncoderBlock(torch.nn.Module):
-            def __init__(self, n_input, n_output, stride = 1):
+            def __init__(self, n_input, n_output, kernel_size = 3, padding = 1, stride = 1):
                 super().__init__()
                 self.net = torch.nn.Sequential(
-                    torch.nn.Conv1d(n_input, n_output, kernel_size = 3, padding = 1, stride = stride, bias=False),
+                    torch.nn.Conv1d(n_input, n_output, kernel_size = kernel_size, padding = padding, stride = stride, bias=False),
+                    torch.nn.BatchNorm1d(n_output),
+                    torch.nn.ReLU(),
+                    torch.nn.Conv1d(n_output, n_output, kernel_size = kernel_size, padding = padding, stride = 1, bias=False),
                     torch.nn.BatchNorm1d(n_output),
                     torch.nn.ReLU()
                 )
+                self.downsample = None
+                if n_input != n_output or stride != 1:
+                    self.downsample = torch.nn.Sequential(
+                        torch.nn.Conv1d(n_input, n_output, kernel_size = 1, stride = stride, bias = False),
+                        torch.nn.BatchNorm1d(n_output)
+                    )
             
             def forward(self, x):
-                return self.net(x)            
+                z = x
+                if self.downsample != None:
+                    z = self.downsample(x)
+                return self.net(x) + z
 
-        def __init__(self, dim_sizes = [32, 64, 32], n_input = 1, latent_dim = 10):
+        def __init__(self):
             super().__init__()
             L = list()
-            L.append(torch.nn.BatchNorm1d(n_input))
-            L.append(torch.nn.Conv1d(n_input, dim_sizes[0], kernel_size = 7, padding = 3, stride = 1, bias=False))
-            L.append(torch.nn.BatchNorm1d(dim_sizes[0]))
-            L.append(torch.nn.ReLU())
-            for i in range(1, len(dim_sizes)):
-                L.append(self.EncoderBlock(dim_sizes[i-1], dim_sizes[i], stride=1))
-            L.append(self.EncoderBlock(dim_sizes[-1], 1, stride=2))
+            L.append(self.EncoderBlock(1, 32, kernel_size = 7, padding = 3, stride=2))
+            L.append(self.EncoderBlock(32, 64, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.EncoderBlock(64, 128, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.EncoderBlock(128, 128, stride=2))
+            L.append(self.EncoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.EncoderBlock(64, 32, kernel_size = 3, padding = 1, stride=2))
+            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 0, stride=1))
+
             self.layers = torch.nn.Sequential(*L)
         
         def forward(self, x):
@@ -97,27 +108,56 @@ class AutoEncoderConv(torch.nn.Module):
 
     class Decoder(torch.nn.Module):
         class DecoderBlock(torch.nn.Module):
-            def __init__(self, n_input, n_output, stride = 1):
+            def __init__(self, n_input, n_output, kernel_size = 3, padding = 1, stride=1):
                 super().__init__()
                 self.net = torch.nn.Sequential(
-                    torch.nn.Conv1d(n_input, n_output, kernel_size = 3, padding = 1, stride = stride, bias=False),
+                    torch.nn.Conv1d(n_input, n_output, kernel_size = kernel_size, padding = padding, stride = stride, bias=False),
+                    torch.nn.BatchNorm1d(n_output),
+                    torch.nn.ReLU(),
+                    torch.nn.Conv1d(n_output, n_output, kernel_size = kernel_size, padding = padding, stride = 1, bias=False),
+                    torch.nn.BatchNorm1d(n_output),
+                    torch.nn.ReLU()
+                )
+                self.downsample = None
+                if n_input != n_output or stride != 1:
+                    self.downsample = torch.nn.Sequential(
+                        torch.nn.Conv1d(n_input, n_output, kernel_size = 1, stride = stride, bias = False),
+                        torch.nn.BatchNorm1d(n_output)
+                    )
+            
+            def forward(self, x):
+                z = x
+                if self.downsample != None:
+                    z = self.downsample(x)
+                return self.net(x) + z
+
+        class TransposeBlock(torch.nn.Module):
+            def __init__(self, n_input, n_output, kernel_size = 3, padding = 1, stride = 2, output_padding=1):
+                super().__init__()
+                self.net = torch.nn.Sequential(
+                    torch.nn.ConvTranspose1d(n_input, n_output, kernel_size = kernel_size, padding = padding, stride = stride, output_padding=output_padding, bias=False),
                     torch.nn.BatchNorm1d(n_output),
                     torch.nn.ReLU()
                 )
             
             def forward(self, x):
-                return self.net(x)            
+                return self.net(x)
 
-        def __init__(self, dim_sizes = [32, 64, 32], latent_dim = 10, n_output = 20):
+        def __init__(self):
             super().__init__()
             L = list()
-            L.append(torch.nn.BatchNorm1d(1))
-            L.append(torch.nn.ConvTranspose1d(1, dim_sizes[0], kernel_size = 7, padding = 3, stride = 1, bias=False))
-            L.append(torch.nn.BatchNorm1d(dim_sizes[0]))
-            L.append(torch.nn.ReLU())
-            for i in range(1, len(dim_sizes)):
-                L.append(self.DecoderBlock(dim_sizes[i-1], dim_sizes[i]))
-            L.append(torch.nn.ConvTranspose1d(dim_sizes[-1], 1, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
+            # L.append(self.TransposeBlock(1, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
+            L.append(self.TransposeBlock(1, 32, kernel_size = 1, padding = 0, stride = 3, output_padding=2))
+            L.append(self.TransposeBlock(32, 32, kernel_size = 3, padding = 0, stride = 1, output_padding=0))
+            L.append(self.DecoderBlock(32, 64, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.DecoderBlock(64, 128, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.TransposeBlock(128, 128, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
+            L.append(self.DecoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.DecoderBlock(64, 32, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.TransposeBlock(32, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
+            L.append(self.DecoderBlock(32, 32, kernel_size = 3, padding = 1, stride=1))
+            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 1, stride=1))
+
             self.layers = torch.nn.Sequential(*L)
         
         def forward(self, x):
@@ -125,8 +165,8 @@ class AutoEncoderConv(torch.nn.Module):
 
     def __init__(self, encoder_dim_sizes = [32, 64, 32], decoder_dim_sizes = [32, 64, 32], n_input = 1, latent_dim = 1):
             super().__init__()
-            self.encoder = self.Encoder(dim_sizes=encoder_dim_sizes, n_input=n_input, latent_dim=latent_dim)
-            self.decoder = self.Decoder(dim_sizes=decoder_dim_sizes, latent_dim=latent_dim, n_output=n_input)
+            self.encoder = self.Encoder()
+            self.decoder = self.Decoder()
         
     def forward(self, x):
         encoded = self.encoder(x[:, None, :])

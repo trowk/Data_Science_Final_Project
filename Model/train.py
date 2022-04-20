@@ -12,7 +12,7 @@ VALID_PATH = "Data/test.npy"
 def train(args):
     from os import path
     # model = AutoEncoder(encoder_dim_sizes = [32, 64, 32, 16], decoder_dim_sizes = [32, 64, 32], n_input = 20, latent_dim = 10)
-    model = AutoEncoderConv(encoder_dim_sizes = [32, 64, 32], decoder_dim_sizes = [32, 64, 32], n_input = 1, latent_dim = 10)
+    model = AutoEncoderConv()
 
     # Set hyperparameters from the parser
     lr = args.lr
@@ -27,6 +27,7 @@ def train(args):
     # Set up loss function and optimizer
     loss_func = torch.nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay = weight_decay)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, 'min', verbose=True)
 
     # Set up training data and validation data
     data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize)
@@ -50,7 +51,6 @@ def train(args):
         loss_vals = list()
         for x in data_train:
             x = x.to(device)
-
             pred = model(x)
             
             train_error_val.append(error(pred, x))
@@ -70,6 +70,8 @@ def train(args):
         train_error_total = torch.FloatTensor(train_error_val).mean().item()
         print('Train Error', train_error_total)
         print('Loss', torch.FloatTensor(loss_vals).mean().item())
+        scheduler.step(torch.FloatTensor(loss_vals).mean().item())
+
         if train_logger:
             train_logger.add_scalar('Train Error', train_error_total, global_step=global_step)
 
