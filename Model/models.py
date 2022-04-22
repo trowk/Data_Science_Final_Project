@@ -99,7 +99,8 @@ class AutoEncoderConv(torch.nn.Module):
             L.append(self.EncoderBlock(128, 128, stride=2))
             L.append(self.EncoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
             L.append(self.EncoderBlock(64, 32, kernel_size = 3, padding = 1, stride=1))
-            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.EncoderBlock(32, 1, kernel_size = 3, padding = 1, stride=1))
+            L.append(torch.nn.Linear(5, 1))
 
             self.layers = torch.nn.Sequential(*L)
         
@@ -146,7 +147,7 @@ class AutoEncoderConv(torch.nn.Module):
         def __init__(self):
             super().__init__()
             L = list()
-            # L.append(self.TransposeBlock(1, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
+            L.append(torch.nn.Linear(1, 5))
             L.append(self.TransposeBlock(1, 32, kernel_size = 3, padding = 1, stride = 2, output_padding=1))
             L.append(self.DecoderBlock(32, 64, kernel_size = 3, padding = 1, stride=1))
             L.append(self.DecoderBlock(64, 128, kernel_size = 3, padding = 1, stride=1))
@@ -154,7 +155,8 @@ class AutoEncoderConv(torch.nn.Module):
             L.append(self.DecoderBlock(128, 64, kernel_size = 3, padding = 1, stride=1))
             L.append(self.DecoderBlock(64, 32, kernel_size = 3, padding = 1, stride=1))
             L.append(self.DecoderBlock(32, 32, kernel_size = 3, padding = 1, stride=1))
-            L.append(torch.nn.Conv1d(32, 1, kernel_size = 3, padding = 1, stride=1))
+            L.append(self.DecoderBlock(32, 1, kernel_size = 3, padding = 1, stride=1))
+            L.append(torch.nn.Linear(20, 20))
 
             self.layers = torch.nn.Sequential(*L)
         

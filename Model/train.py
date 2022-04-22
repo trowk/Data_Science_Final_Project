@@ -1,5 +1,5 @@
 from models import AutoEncoder, AutoEncoderConv, save_model
-from utils import load_data, error
+from utils import load_data, error, load_synthetic
 
 import time
 import torch
@@ -30,22 +30,20 @@ def train(args):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, 'min', verbose=True)
 
     # Set up training data and validation data
-    data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize)
-    data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize)
+    if not args.synthetic:
+        data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=args.noise)
+        data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=None)
+    else:
+        data_train = load_synthetic(num_workers, batch_size, mean=0, std=1, normalize=True, data_len = 13504, store_data = False)
+        data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=None)
 
-    # Set up loggers
-    log_time = '{}'.format(time.strftime('%H-%M-%S'))
-    log_name = 'lr=%s_epoch=%s_batch_size=%s_wd=%s' % (lr, epochs, batch_size, weight_decay)
-    train_logger, valid_logger = None, None
-    if args.log_dir:
-        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train') + '/%s_%s' % (log_name, log_time))
-        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'test') + '/%s_%s' % (log_name, log_time))
-    global_step = 0
+    experiment_data = list()
 
     # Wrap in a progress bar.
     for epoch in tqdm(range(epochs)):
         # Set the model to training mode.
         model.train()
+        optim.zero_grad()
 
         train_error_val = list()
         loss_vals = list()
@@ -71,22 +69,14 @@ def train(args):
             
             # Add loss to TensorBoard.
             loss_vals.append(loss.item())
-            if train_logger:
-                train_logger.add_scalar('Loss', loss.item(), global_step=global_step)
-            global_step += 1
 
         train_error_total = torch.FloatTensor(train_error_val).mean().item()
-        print('Train Error', train_error_total)
-        print('Loss', torch.FloatTensor(loss_vals).mean().item())
-        scheduler.step(torch.FloatTensor(loss_vals).mean().item())
-
-        if train_logger:
-            train_logger.add_scalar('Train Error', train_error_total, global_step=global_step)
+        loss_error_total = torch.FloatTensor(loss_vals).mean().item()
+        scheduler.step(loss_error_total)
 
         # Set the model to eval mode and compute accuracy.
         # No need to change this, but feel free to implement additional logging.
         model.eval()
-
         error_validation = list()
 
         for x in data_val:
@@ -104,11 +94,10 @@ def train(args):
                 error_validation.append(error(pred, d))
 
         error_total = torch.FloatTensor(error_validation).mean().item()
-        print('Validation Error', error_total)
-        if valid_logger:
-            valid_logger.add_scalar('Validation Error', error_total, global_step=global_step)
-
+        experiment_data.append({'Synthetic': args.synthetic, 'Noise': args.noise, 'epoch': epoch, 'loss': loss_error_total, 'train_error': train_error_total, 'validation_error': error_total})
+        print(experiment_data[-1])
     save_model(model)
+    return experiment_data
 
 
 if __name__ == '__main__':
@@ -123,6 +112,8 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--num_workers', type=int, default=16)
     parser.add_argument('-d', '--weight_decay', type=float, default=1e-6)
     parser.add_argument('-v', '--denormalize', default=False, action='store_true')
+    parser.add_argument('-n', '--noise', default=None, type=float)
+    parser.add_argument('-s', '--synthetic', default=False, action='store_true')
 
     args = parser.parse_args()
     train(args)
