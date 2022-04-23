@@ -12,7 +12,7 @@ VALID_PATH = "Data/test.npy"
 def train(args):
     from os import path
     # model = AutoEncoder(encoder_dim_sizes = [32, 64, 32, 16], decoder_dim_sizes = [32, 64, 32], n_input = 20, latent_dim = 10)
-    model = AutoEncoderConv()
+    model = AutoEncoderConv(latent_dim=args.latent_dim)
 
     # Set hyperparameters from the parser
     lr = args.lr
@@ -94,8 +94,8 @@ def train(args):
                 error_validation.append(error(pred, d))
 
         error_total = torch.FloatTensor(error_validation).mean().item()
-        experiment_data.append({'Synthetic': args.synthetic, 'Noise': args.noise, 'epoch': epoch, 'loss': loss_error_total, 'train_error': train_error_total, 'validation_error': error_total})
-        print(experiment_data[-1])
+        experiment_data.append({'latent_dim': args.latent_dim, 'epoch': epoch, 'loss': loss_error_total, 'train_error': train_error_total, 'validation_error': error_total})
+
     save_model(model)
     return experiment_data
 
@@ -114,6 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--denormalize', default=False, action='store_true')
     parser.add_argument('-n', '--noise', default=None, type=float)
     parser.add_argument('-s', '--synthetic', default=False, action='store_true')
+    parser.add_argument('-f', '--latent_dim', type=int, default=5)
 
     args = parser.parse_args()
     train(args)
