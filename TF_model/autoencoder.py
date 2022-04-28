@@ -8,7 +8,7 @@ import numpy as np
 from numpy import newaxis
 import csv
 
-data = pd.read_csv("S_train_log_normalized.csv", header=None, skiprows=[15005])
+data = pd.read_csv("S_train_normalized.csv", header=None, skiprows=[15005])
 data = pd.DataFrame(data)
 ds   = data.to_numpy()
 
