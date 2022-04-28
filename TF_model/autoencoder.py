@@ -6,13 +6,7 @@ from tensorflow.keras.optimizers import Adam
 import pandas as pd
 import numpy as np
 from numpy import newaxis
-from tensorflow.keras.callbacks import TensorBoard
-import datetime
 import csv
-
-
-#log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-#tensorboard = TensorBoard(log_dir= log_dir, histogram_freq=1)
 
 data = pd.read_csv("S_train_log_normalized.csv", header=None, skiprows=[15005])
 data = pd.DataFrame(data)
@@ -40,8 +34,8 @@ encoder_output = Dense(3, activation = None)(y) #3x1
 #encoder = Model(inputs = encoder_input, outputs = encoder_output)
 
 decoder_input = encoder_output
-y = Dense(1024, activation = 'relu')(decoder_input) #400x1
-y = Reshape((8,128))(y) #10x30
+y = Dense(1024, activation = 'relu')(decoder_input) #1024x1
+y = Reshape((8,128))(y) #8x128
 y = Conv1DTranspose(64,5, activation = 'relu')(y) #12x64
 y = Conv1DTranspose(32,3, activation = 'relu')(y) #14x32
 y = Conv1DTranspose(16,3, activation = 'relu')(y) #16x16
