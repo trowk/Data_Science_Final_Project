@@ -27,16 +27,16 @@ y = Conv1D(8,3, activation = 'relu')(encoder_input) #18x8
 y = Conv1D(16,3, activation = 'relu')(y) #16x16
 y = Conv1D(32,3, activation = 'relu')(y) #14x32
 y = Conv1D(64,3,activation = 'relu')(y) #12x64
-y = Conv1D(128,5,activation = 'relu')(y) #8x128
-y = Flatten()(y) #1024x1
-encoder_output = Dense(3, activation = None)(y) #3x1
+y = Conv1D(128,3,activation = 'relu')(y) #10x128
+y = Flatten()(y) #1280x1
+encoder_output = Dense(3, activation = 'relu')(y) #2x1
 
 #encoder = Model(inputs = encoder_input, outputs = encoder_output)
 
 decoder_input = encoder_output
-y = Dense(1024, activation = 'relu')(decoder_input) #1024x1
-y = Reshape((8,128))(y) #8x128
-y = Conv1DTranspose(64,5, activation = 'relu')(y) #12x64
+y = Dense(1280, activation = 'relu')(decoder_input) #1280x1
+y = Reshape((10,128))(y) #10x128
+y = Conv1DTranspose(64,3, activation = 'relu')(y) #12x64
 y = Conv1DTranspose(32,3, activation = 'relu')(y) #14x32
 y = Conv1DTranspose(16,3, activation = 'relu')(y) #16x16
 y = Conv1DTranspose(8,3, activation = 'relu')(y) #18x8
@@ -48,7 +48,7 @@ autoencoder = Model(encoder_input, decoder_output)
 opt = Adam(lr = 0.001, decay=1e-6)
 autoencoder.compile(opt, loss = 'mse')
 
-autoencoder.fit(ds,ds, epochs = 20, batch_size = 100, validation_split = 0.2)
+autoencoder.fit(ds,ds, epochs = 30, batch_size = 100, validation_split = 0.2)
 
 example = autoencoder.predict([ds[0].reshape(-1,20,1)])
 
