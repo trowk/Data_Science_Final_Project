@@ -35,8 +35,11 @@ def main():
     # train_file = os.path.join(args.data_store, 'predict_params.npy')
     # with open(train_file, 'wb') as f:
     #     np.save(f, data)
-
-    x_train, x_test, _, _ = train_test_split([i for i in range(data.shape[0])], np.zeros(data.shape[0]), test_size=args.validation_percentage, random_state=args.seed)
+    if args.validation_percentage > 0:
+        x_train, x_test, _, _ = train_test_split([i for i in range(data.shape[0])], np.zeros(data.shape[0]), test_size=args.validation_percentage, random_state=args.seed)
+    else:
+        x_train = [i for i in range(data.shape[0])]
+        x_test = []
     if not os.path.isdir(args.data_store):
         os.makedirs(args.data_store)
     train_file = os.path.join(args.data_store, 'train.npy')

@@ -16,7 +16,7 @@ def compress(args):
     model.eval()
     predictor.eval()
 
-    data = load_data_predict(args.dir, '../Data/predict_params.npy', args.num_workers, args.batch_size, torch.nn.functional.normalize, store_norms=True, shuffle=False, drop_last=False)
+    data = load_data_predict(args.dir, '../Data/param_train.npy', args.num_workers, args.batch_size, torch.nn.functional.normalize, store_norms=True, shuffle=False, drop_last=False)
     result = list()
     for x, params, norms in data:
         x = x.to(device)
