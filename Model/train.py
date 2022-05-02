@@ -6,8 +6,8 @@ import torch
 import torch.utils.tensorboard as tb
 from tqdm import tqdm
 
-TRAIN_PATH = "Data/train.npy"
-VALID_PATH = "Data/test.npy"
+TRAIN_PATH = "Data/new_train.npy"
+VALID_PATH = "Data/new_test.npy"
 
 def train(args):
     from os import path
@@ -27,7 +27,7 @@ def train(args):
     # Set up loss function and optimizer
     loss_func = torch.nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay = weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, 'min', verbose=True)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optim, milestones=[30,60], gamma=0.1)
 
     # Set up training data and validation data
     if not args.synthetic:
@@ -55,7 +55,6 @@ def train(args):
                 d = x
             d = d.to(device)
             pred = model(d)
-            
             if args.denormalize:
                 train_error_val.append(error(pred * norms[:, None], d * norms[:, None]))
             else:
@@ -72,12 +71,13 @@ def train(args):
 
         train_error_total = torch.FloatTensor(train_error_val).mean().item()
         loss_error_total = torch.FloatTensor(loss_vals).mean().item()
-        scheduler.step(loss_error_total)
+        scheduler.step()
 
         # Set the model to eval mode and compute accuracy.
         # No need to change this, but feel free to implement additional logging.
         model.eval()
         error_validation = list()
+        val_loss = list()
 
         for x in data_val:
             if args.denormalize:
@@ -92,11 +92,14 @@ def train(args):
                 error_validation.append(error(pred * norms[:, None], d * norms[:, None]))
             else:
                 error_validation.append(error(pred, d))
+                val_loss.append(loss_func(pred, d).item())
 
         error_total = torch.FloatTensor(error_validation).mean().item()
         experiment_data.append({'latent_dim': args.latent_dim, 'epoch': epoch, 'loss': loss_error_total, 'train_error': train_error_total, 'validation_error': error_total})
+        print('Validation Loss:', torch.FloatTensor(val_loss).mean().item())
 
-    save_model(model)
+
+    # save_model(model, 'Testing/autoencoder.th')
     return experiment_data
 
 

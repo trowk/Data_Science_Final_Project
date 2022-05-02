@@ -56,13 +56,41 @@ class SyntheticData(Dataset):
                 d /= d.norm()
             return d
 
-def load_data(dataset_path, num_workers=0, batch_size=128, transforms = None, store_norms = False, noise=None):
+class PredictorDataset(Dataset):
+    def __init__(self, dataset_path, predictor_path, transforms = None, store_norms = False):
+        self.store_norms = False
+        with open(dataset_path, 'rb') as f:
+            self.data = torch.from_numpy(np.load(f)).float()
+            if store_norms:
+                self.store_norms = store_norms
+                self.norms = self.data.norm(dim = 1)
+            if transforms:
+                self.data = transforms(self.data)
+
+        with open(predictor_path, 'rb') as f:
+            self.predictors = torch.from_numpy(np.load(f)).float()
+
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        if self.store_norms:
+            return (self.data[idx], self.predictors[idx], self.norms[idx])
+        else:
+            return (self.data[idx], self.predictors[idx])
+
+def load_data(dataset_path, num_workers=0, batch_size=128, transforms = None, store_norms = False, noise=None, shuffle=True, drop_last=True):
     dataset = PDEDataset(dataset_path, transforms = transforms, store_norms = store_norms, noise=noise)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
 
 def load_synthetic(num_workers=0, batch_size=128, mean=0, std=1, normalize=True, data_len = 10000, store_data = False):
     dataset = SyntheticData(mean=mean, std=std, normalize=normalize, data_len = data_len, store_data = store_data)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+
+def load_data_predict(dataset_path, predictor_path, num_workers=0, batch_size=128, transforms = None, store_norms = False,  shuffle=True, drop_last=True):
+    dataset = PredictorDataset(dataset_path, predictor_path, transforms = transforms, store_norms = store_norms)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
 
 def error(pred, data):
     return torch.norm(pred - data)
