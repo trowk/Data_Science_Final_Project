@@ -6,8 +6,8 @@ import torch
 import torch.utils.tensorboard as tb
 from tqdm import tqdm
 
-TRAIN_PATH = "Data/new_train.npy"
-VALID_PATH = "Data/new_test.npy"
+TRAIN_PATH = "Data/train.npy"
+VALID_PATH = "Data/test.npy"
 
 def train(args):
     from os import path
@@ -32,8 +32,8 @@ def train(args):
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optim, milestones=[30,60], gamma=0.1)
 
     # Set up training data and validation data
-    data_train = load_data_predict(TRAIN_PATH, 'Data/predictor_train.npy', num_workers, batch_size, torch.nn.functional.normalize, store_norms=False)
-    data_val = load_data_predict(VALID_PATH, 'Data/predictor_test.npy', num_workers, batch_size, torch.nn.functional.normalize, store_norms=False)
+    data_train = load_data_predict(TRAIN_PATH, 'Data/param_train.npy', num_workers, batch_size, torch.nn.functional.normalize, store_norms=False)
+    data_val = load_data_predict(VALID_PATH, 'Data/param_test.npy', num_workers, batch_size, torch.nn.functional.normalize, store_norms=False)
 
     experiment_data = list()
 

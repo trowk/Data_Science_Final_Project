@@ -39,8 +39,8 @@ def main():
     x_train, x_test, _, _ = train_test_split([i for i in range(data.shape[0])], np.zeros(data.shape[0]), test_size=args.validation_percentage, random_state=args.seed)
     if not os.path.isdir(args.data_store):
         os.makedirs(args.data_store)
-    train_file = os.path.join(args.data_store, 'new_train.npy')
-    test_file = os.path.join(args.data_store, 'new_test.npy')
+    train_file = os.path.join(args.data_store, 'train.npy')
+    test_file = os.path.join(args.data_store, 'test.npy')
     with open(train_file, 'wb') as f:
         np.save(f, data[x_train])
     with open(test_file, 'wb') as f:
@@ -54,23 +54,23 @@ def main():
             data.append(row)
     
     data = np.array(data).astype(np.float64)        
-    train_file = os.path.join(args.data_store, 'predictor_train.npy')
-    test_file = os.path.join(args.data_store, 'predictor_test.npy')
+    train_file = os.path.join(args.data_store, 'param_train.npy')
+    test_file = os.path.join(args.data_store, 'param_test.npy')
     with open(train_file, 'wb') as f:
         np.save(f, data[x_train])
     with open(test_file, 'wb') as f:
         np.save(f, data[x_test])
     
 
-    x_train, x_test, _, _ = train_test_split(data, np.zeros(data.shape[0]), test_size=args.validation_percentage, random_state=args.seed)
-    if not os.path.isdir(args.data_store):
-        os.makedirs(args.data_store)
-    train_file = os.path.join(args.data_store, 'large_train.npy')
-    test_file = os.path.join(args.data_store, 'large_test.npy')
-    with open(train_file, 'wb') as f:
-        np.save(f, x_train)
-    with open(test_file, 'wb') as f:
-        np.save(f, x_test)
+    # x_train, x_test, _, _ = train_test_split(data, np.zeros(data.shape[0]), test_size=args.validation_percentage, random_state=args.seed)
+    # if not os.path.isdir(args.data_store):
+    #     os.makedirs(args.data_store)
+    # train_file = os.path.join(args.data_store, 'large_train.npy')
+    # test_file = os.path.join(args.data_store, 'large_test.npy')
+    # with open(train_file, 'wb') as f:
+    #     np.save(f, x_train)
+    # with open(test_file, 'wb') as f:
+    #     np.save(f, x_test)
     
 
 
