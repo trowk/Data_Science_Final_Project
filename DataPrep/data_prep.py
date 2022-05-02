@@ -8,7 +8,7 @@ import os
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--train_file', type=str, default='S_train.mat',
+    parser.add_argument('-t', '--train_file', type=str, default='S_train_unnormalized.csv',
         help='Path to training data')
     parser.add_argument('-d', '--data_store', type=str, default='../Model/Data',
         help='Directory where data will be stored')
@@ -17,8 +17,13 @@ def main():
     parser.add_argument('-v', '--validation_percentage', type=float, default=0.1,
         help='What percentage of the data that will belong to validation set')
     args = parser.parse_args()
-    matrix_name = (args.train_file.split('/')[-1]).split('.')[0]
-    data = loadmat(args.train_file)[matrix_name]
+    data = list()
+    with open(args.train_file) as f:
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            data.append(row)
+    
+    data = np.array(data).astype(np.float64)  
 
     # train_file = os.path.join(args.data_store, 'predict_vals.npy')
     # with open(train_file, 'wb') as f:
@@ -50,7 +55,6 @@ def main():
         np.save(f, data[x_test])
 
     data = list()
-    test = 0
     with open('M.csv') as f:
         csvreader = csv.reader(f)
         for row in csvreader:

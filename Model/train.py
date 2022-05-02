@@ -6,8 +6,8 @@ import torch
 import torch.utils.tensorboard as tb
 from tqdm import tqdm
 
-TRAIN_PATH = "Data/new_train.npy"
-VALID_PATH = "Data/new_test.npy"
+TRAIN_PATH = "Data/train.npy"
+VALID_PATH = "Data/test.npy"
 
 def train(args):
     from os import path
@@ -99,7 +99,7 @@ def train(args):
         print('Validation Loss:', torch.FloatTensor(val_loss).mean().item())
 
 
-    # save_model(model, 'Testing/autoencoder.th')
+    save_model(model, 'Testing/autoencoder.th')
     return experiment_data
 
 

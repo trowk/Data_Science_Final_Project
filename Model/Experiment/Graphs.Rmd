@@ -11,17 +11,16 @@ library("tidyverse")
 
 ```{r, echo=FALSE}
 df <- tibble(
-  synthetic_data = c(TRUE, rep(FALSE, 6)),
-  noise = c(0, 0, 10^(0:4)),
-  type=c(1:7)
+  latent_dim=seq(1,10)
 )
 df <- df %>% slice(rep(1:n(), each = 5)) %>%
   slice(sample(n()))
 write.csv(df, "experiment.csv")
+df
 ```
 
 ```{r, echo=FALSE}
-df <- read.csv('results.csv', header = TRUE) %>%
+df <- read.csv('noise_results.csv', header = TRUE) %>%
   mutate(
     Type = factor(Type),
     Noise = factor(Noise),
@@ -42,7 +41,6 @@ df <- read.csv('results.csv', header = TRUE) %>%
     Type = first(Type)
   ) %>%
   ungroup()
-df
 ```
 
 ```{r, echo=FALSE}
@@ -57,6 +55,7 @@ ggplot(df %>% filter(Noise == 0), aes(epoch, mean_validation_error, group=Type))
 ```
 
 ```{r, echo=FALSE}
+df
 ggplot(df %>% filter(Synthetic == "False"), aes(epoch, mean_validation_error, group=Type)) +
   geom_line(aes(y=mean_validation_error, color=Type)) + 
   theme_minimal() +
@@ -65,4 +64,73 @@ ggplot(df %>% filter(Synthetic == "False"), aes(epoch, mean_validation_error, gr
   scale_fill_discrete(name = "Norm of Noise", labels = c(0, 1/1, 1/10, 1/100, 1/1000, 1/10000)) +
   scale_color_discrete(name = "Norm of Noise", labels = c(0, 1/1, 1/10, 1/100, 1/1000, 1/10000)) +
   scale_y_continuous(trans='log10')
+
+ggplot(df %>% filter(Synthetic == "False" & Noise != 1 & epoch >= 75), aes(epoch, mean_validation_error, group=Type)) +
+  geom_line(aes(y=mean_validation_error, color=Type)) + 
+  theme_minimal() +
+  labs(x="Epoch",
+       y="Mean Validation Error") +
+  scale_fill_discrete(name = "Norm of Noise", labels = c(0, 1/1, 1/10, 1/100, 1/1000, 1/10000)) +
+  scale_color_discrete(name = "Norm of Noise", labels = c(0, 1/1, 1/10, 1/100, 1/1000, 1/10000)) +
+  scale_y_continuous(trans='log10')
+```
+
+```{r, echo=FALSE}
+df <- read.csv('dimension_results.csv', header = TRUE) %>%
+  select(
+    -X
+  ) %>%
+  mutate(
+    latent_dim = factor(latent_dim, levels=c(1,2,3,4,5,6,7,8,9,10))
+  ) %>%
+  group_by(
+    latent_dim, epoch
+  ) %>%
+  summarize(
+    latent_dim = first(latent_dim),
+    epoch = first(epoch),
+    mean_loss = mean(loss),
+    sd_loss = 2*sd(loss) / sqrt(5),
+    mean_train_error = mean(train_error),
+    sd_train_error = 2*sd(train_error) / sqrt(5),
+    mean_validation_error = mean(validation_error),
+    sd_validation_error = 2*sd(validation_error) / sqrt(5)
+  ) %>%
+  ungroup()
+```
+
+
+```{r, echo=FALSE}
+ggplot(df %>% filter(epoch >= 100), aes(epoch, mean_validation_error, group=latent_dim)) +
+  geom_line(aes(y=mean_validation_error, color=latent_dim)) +
+  theme_minimal() +
+  labs(x="Epoch",
+       y="Log Mean Validation Error") +
+  scale_fill_discrete(name = "Latent Dimensions") +
+  scale_color_discrete(name = "Latent Dimensions") +
+  scale_y_continuous(trans='log10')
+
+ggplot(df, aes(epoch, mean_validation_error, group=latent_dim)) +
+  geom_line(aes(y=mean_validation_error, color=latent_dim)) +
+  theme_minimal() +
+  labs(x="Epoch",
+       y="Mean Validation Error") +
+  scale_fill_discrete(name = "Latent Dimensions") +
+  scale_color_discrete(name = "Latent Dimensions")
+```
+
+```{r, echo=FALSE}
+df2 <- read.csv('dimension_results.csv', header = TRUE) %>%
+  select(
+    -X
+  ) %>%
+  mutate(
+    latent_dim = factor(latent_dim, levels=c(1,2,3,4,5,6,7,8,9,10)),
+  ) %>%
+  filter(
+    epoch == 149
+  )
+bartlett.test(validation_error ~ latent_dim, data = df2)
+oneway.test(df2$validation_error~df2$latent_dim)
+pairwise.t.test(df2$validation_error,df2$latent_dim, pool.sd = FALSE)
 ```

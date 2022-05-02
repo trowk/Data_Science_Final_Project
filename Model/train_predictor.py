@@ -12,7 +12,7 @@ VALID_PATH = "Data/test.npy"
 def train(args):
     from os import path
     # model = AutoEncoder(encoder_dim_sizes = [32, 64, 32, 16], decoder_dim_sizes = [32, 64, 32], n_input = 20, latent_dim = 10)
-    model = load_model('Testing/autoencoder.th')
+    model = load_model('Testing/autoencoder.th', AutoEncoderConv)
     predictor = Predictor() 
 
     # Set hyperparameters from the parser
