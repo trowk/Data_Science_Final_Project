@@ -10,6 +10,9 @@ class PDEDataset(Dataset):
         self.noise = noise
         with open(dataset_path, 'rb') as f:
             self.data = torch.from_numpy(np.load(f)).float()
+            min_val = -1836615391510528.0
+            max_val = 580880569466880.0
+            self.data = (self.data - min_val) / max_val
             if store_norms:
                 self.store_norms = store_norms
                 self.norms = self.data.norm(dim = 1)

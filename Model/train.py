@@ -31,8 +31,8 @@ def train(args):
 
     # Set up training data and validation data
     if not args.synthetic:
-        data_train = load_data(TRAIN_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=args.noise)
-        data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=None)
+        data_train = load_data(TRAIN_PATH, num_workers, batch_size, None, store_norms=args.denormalize, noise=args.noise)
+        data_val = load_data(VALID_PATH, num_workers, batch_size, None, store_norms=args.denormalize, noise=None)
     else:
         data_train = load_synthetic(num_workers, batch_size, mean=0, std=1, normalize=True, data_len = 13504, store_data = False)
         data_val = load_data(VALID_PATH, num_workers, batch_size, torch.nn.functional.normalize, store_norms=args.denormalize, noise=None)

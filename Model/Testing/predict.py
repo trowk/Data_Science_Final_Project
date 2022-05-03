@@ -16,16 +16,17 @@ def compress(args):
     model.eval()
     predictor.eval()
 
-    data = load_data_predict(args.dir, '../Data/param_train.npy', args.num_workers, args.batch_size, torch.nn.functional.normalize, store_norms=True, shuffle=False, drop_last=False)
+    data = load_data_predict(args.dir, '../Data/param_train.npy', args.num_workers, args.batch_size, torch.nn.functional.normalize, store_norms=False, shuffle=False, drop_last=False)
     result = list()
-    for x, params, norms in data:
+    min_val = -1836615391510528.0
+    max_val = 580880569466880.0
+    for x, params in data:
         x = x.to(device)
         params = params.to(device)
-        norms = norms.to(device)
 
         latent_pred = predictor(params)
         pred = model.decoder(latent_pred[:, None])
-        result.append(pred.squeeze() * norms[:, None])
+        result.append(pred.squeeze() * max_val + min_val)
     result = torch.cat(result)
 
     np.savetxt("predictions.csv", result.cpu().detach().numpy(), delimiter=",")
